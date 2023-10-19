@@ -1,6 +1,7 @@
 import { getDockerImage, sendErr } from '@taqueria/node-sdk';
 import { ProxyTaskArgs, RequestArgs } from '@taqueria/node-sdk/types';
-import { join } from 'path';
+import * as fs from 'fs';
+import { delimiter, join } from 'path';
 
 export interface LigoOpts extends ProxyTaskArgs.t {
 	command: string;
@@ -77,3 +78,36 @@ export const configure = (dockerImage: string, dockerImageEnvVar: string) => ({
 });
 
 export type Common = ReturnType<typeof configure>;
+
+function exists(path: string): boolean {
+	try {
+		fs.accessSync(path);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function getLigoBinaryFromPath() {
+	const { PATH } = process.env;
+	if (!PATH) {
+		return null;
+	}
+	const paths = PATH.split(delimiter);
+	for (const candidatePath in paths) {
+		const possibleLigoPath = join(candidatePath, 'ligo');
+		if (exists(possibleLigoPath)) {
+			return possibleLigoPath;
+		}
+	}
+	return null;
+}
+
+export function baseDriverCmd(projectDir: string, ligoDockerImage: string): string {
+	const ligoBinaryFromPath = getLigoBinaryFromPath();
+	if (ligoBinaryFromPath !== null) {
+		return ligoBinaryFromPath;
+	} else {
+		return `DOCKER_DEFAULT_PLATFORM=linux/amd64 docker run --rm -v \"${projectDir}\":/project -w /project -u $(id -u):$(id -g) ${ligoDockerImage}`;
+	}
+}
