@@ -94,7 +94,7 @@ function getLigoBinaryFromPath() {
 		return null;
 	}
 	const paths = PATH.split(delimiter);
-	for (const candidatePath in paths) {
+for (const candidatePath of paths) {
 		const possibleLigoPath = join(candidatePath, 'ligo');
 		if (exists(possibleLigoPath)) {
 			return possibleLigoPath;
